@@ -20,6 +20,14 @@ def create_iam_user(user_name):
         else:
             print(" Error creating IAM user:", e)
 
+#Attach Policy to IAM User (like 'AmazonS3ReadOnlyAccess')
+def attach_policy(user_name, policy_arn):
+    try:
+        iam.attach_user_policy(UserName=user_name, PolicyArn=policy_arn)
+        print(f" Attached policy '{policy_arn}' to user '{user_name}'.")
+    except ClientError as e:
+        print(" Error attaching policy:", e)
+
 #  List IAM Users
 def list_iam_users():
     try:
@@ -30,10 +38,14 @@ def list_iam_users():
     except ClientError as e:
         print(" Error listing IAM users:", e)
 
-# 🧪 Test script
+# Test script
 if __name__ == "__main__":
     user = "nakul-boto3-user"
     policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
 
     create_iam_user(user)
     list_iam_users()
+
+    confirm = input(f"\ Attach S3 read-only policy to '{user}'? (yes/no): ").strip().lower()
+    if confirm == "yes":
+        attach_policy(user, policy_arn)
