@@ -20,9 +20,20 @@ def create_iam_user(user_name):
         else:
             print(" Error creating IAM user:", e)
 
+#  List IAM Users
+def list_iam_users():
+    try:
+        response = iam.list_users()
+        print(" IAM Users:")
+        for user in response['Users']:
+            print(" -", user['UserName'])
+    except ClientError as e:
+        print(" Error listing IAM users:", e)
+
 # 🧪 Test script
 if __name__ == "__main__":
     user = "nakul-boto3-user"
     policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
 
     create_iam_user(user)
+    list_iam_users()
