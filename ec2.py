@@ -38,6 +38,30 @@ def list_instances():
     for instance in ec2.instances.all():
         print(f" - ID: {instance.id}, State: {instance.state['Name']}, Type: {instance.instance_type}")
 
+# Stop EC2 Instance
+def stop_instance(instance_id):
+    try:
+        instance = ec2.Instance(instance_id)
+        instance.stop()
+        print(f"Stopping instance: {instance.id}")
+        instance.wait_until_stopped()
+        print("Instance stopped.")
+    except ClientError as e:
+        print("Error stopping instance:", e)
+
+# Terminate EC2 Instance
+def terminate_instance(instance_id):
+    try:
+        instance = ec2.Instance(instance_id)
+        instance.terminate()
+        print(f"Terminating instance: {instance.id}")
+        instance.wait_until_terminated()
+        print("Instance terminated.")
+    except ClientError as e:
+        print("Error terminating instance:", e)
+
+
+
 
 # Example usage
 if __name__ == "__main__":
@@ -46,7 +70,24 @@ if __name__ == "__main__":
     key_pair = "flask-tf-key"  # your key name
     security_group = "sg-04170c32022113a49"  # your security group ID
 
-    instance_id = launch_instance(ami, instance_type, key_pair, security_group)
+    instance_id = None
+    confirm = input("🚀 Do you want to launch a new EC2 instance? (yes/no): ").strip().lower()
 
-    input("\n Press Enter to list all instances...")
+    if confirm == "yes":
+        instance_id = launch_instance(ami, instance_type, key_pair, security_group)
+    else:
+        print("Skipping EC2 instance launch.")
+
+    # Always list instances
+    input("\n⏳ Press Enter to list all instances...")
     list_instances()
+
+    # Ask for ID to stop (manual or newly launched)
+    instance_to_stop = input("\n Enter instance ID to stop (or leave blank to skip): ").strip()
+    if instance_to_stop:
+        stop_instance(instance_to_stop)
+
+    # Ask for ID to terminate
+    instance_to_terminate = input("\n Enter instance ID to terminate (or leave blank to skip): ").strip()
+    if instance_to_terminate:
+        terminate_instance(instance_to_terminate)
