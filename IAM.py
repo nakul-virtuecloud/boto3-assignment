@@ -46,6 +46,6 @@ if __name__ == "__main__":
     create_iam_user(user)
     list_iam_users()
 
-    confirm = input(f"\ Attach S3 read-only policy to '{user}'? (yes/no): ").strip().lower()
+    confirm = input(f"Attach S3 read-only policy to '{user}'? (yes/no): ").strip().lower()
     if confirm == "yes":
         attach_policy(user, policy_arn)
