@@ -38,6 +38,22 @@ def list_iam_users():
     except ClientError as e:
         print(" Error listing IAM users:", e)
 
+# Delete IAM User (must detach policies first)
+def delete_iam_user(user_name):
+    try:
+        # Detach all attached policies
+        attached_policies = iam.list_attached_user_policies(UserName=user_name)
+        for policy in attached_policies['AttachedPolicies']:
+            iam.detach_user_policy(UserName=user_name, PolicyArn=policy['PolicyArn'])
+            print(f" Detached policy '{policy['PolicyName']}'")
+
+        # Now delete user
+        iam.delete_user(UserName=user_name)
+        print(f" IAM user '{user_name}' deleted successfully.")
+    except ClientError as e:
+        print(" Error deleting IAM user:", e)
+
+
 # Test script
 if __name__ == "__main__":
     user = "nakul-boto3-user"
@@ -49,3 +65,7 @@ if __name__ == "__main__":
     confirm = input(f"Attach S3 read-only policy to '{user}'? (yes/no): ").strip().lower()
     if confirm == "yes":
         attach_policy(user, policy_arn)
+    
+    confirm = input(f"Do you want to delete user '{user}'? (yes/no): ").strip().lower()
+    if confirm == "yes":
+        delete_iam_user(user)
