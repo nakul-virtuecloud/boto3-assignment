@@ -1,6 +1,7 @@
 import boto3
 import json
 import time
+import os
 
 def create_sns_topic(topic_name, email):
     sns = boto3.client('sns')
@@ -20,8 +21,7 @@ def create_sns_topic(topic_name, email):
 
     return topic_arn
 
-# Call the function
-topic_arn = create_sns_topic("s3-upload-alerts", "nakul.desai@virtuecloud.io")
+
 
 
 
@@ -44,9 +44,9 @@ def create_lambda_iam_role(role_name):
             RoleName=role_name,
             AssumeRolePolicyDocument=json.dumps(assume_role_policy)
         )
-        print(f"✅ IAM Role '{role_name}' created.")
+        print(f" IAM Role '{role_name}' created.")
     except iam.exceptions.EntityAlreadyExistsException:
-        print(f"ℹ️ IAM Role '{role_name}' already exists.")
+        print(f" IAM Role '{role_name}' already exists.")
         role = iam.get_role(RoleName=role_name)
 
     # Attach Policies
@@ -72,6 +72,11 @@ def create_lambda_iam_role(role_name):
 #The script you run locally to create/upload that Lambda
 def create_lambda_function(function_name, role_arn):
     lambda_client = boto3.client('lambda')
+
+    if not os.path.exists("function.zip"):
+        print("ERROR: 'function.zip' not found. Please run: zip function.zip lambda_function.py")
+        return
+
     with open("function.zip", 'rb') as f:
         zipped_code = f.read()
 
@@ -90,5 +95,60 @@ def create_lambda_function(function_name, role_arn):
     except lambda_client.exceptions.ResourceConflictException:
         print(f" Lambda function '{function_name}' already exists.")
 
-role_arn = create_lambda_iam_role("s3-upload-lambda-role")
-create_lambda_function("s3-upload-alert", role_arn)
+def add_lambda_permission(bucket_name, function_name):
+    lambda_client = boto3.client('lambda')
+    sts = boto3.client('sts')
+    account_id = sts.get_caller_identity()["Account"]
+
+    statement_id = 's3invoke'
+    try:
+        response = lambda_client.add_permission(
+            FunctionName=function_name,
+            StatementId=statement_id,
+            Action='lambda:InvokeFunction',
+            Principal='s3.amazonaws.com',
+            SourceArn=f'arn:aws:s3:::{bucket_name}',
+            SourceAccount=account_id
+        )
+        print(f" Added permission for S3 to invoke Lambda: {response['Statement']}")
+    except lambda_client.exceptions.ResourceConflictException:
+        print(" Lambda permission already exists. Skipping...")
+
+
+
+
+def add_s3_event_notification(bucket_name, function_arn):
+    s3 = boto3.client('s3')
+
+    notification_config = {
+        'LambdaFunctionConfigurations': [
+            {
+                'LambdaFunctionArn': function_arn,
+                'Events': ['s3:ObjectCreated:*']
+            }
+        ]
+    }
+
+    s3.put_bucket_notification_configuration(
+        Bucket=bucket_name,
+        NotificationConfiguration=notification_config
+    )
+    print(f"✅ S3 bucket '{bucket_name}' is now triggering Lambda on upload.")
+
+
+if __name__ == "__main__":
+    bucket_name = "sns-virtuecloud"
+    function_name = "s3-upload-alert"
+
+    # Call the function
+    topic_arn = create_sns_topic("s3-upload-alerts", "nakul.desai@virtuecloud.io")
+    role_arn = create_lambda_iam_role("lambda-s3-role")
+    create_lambda_function(function_name, role_arn)
+
+    add_lambda_permission(bucket_name, function_name)
+    time.sleep(10)
+
+    lambda_client = boto3.client('lambda')
+    function_arn = lambda_client.get_function(FunctionName=function_name)['Configuration']['FunctionArn']
+
+    add_s3_event_notification(bucket_name, function_arn)
