@@ -1,27 +1,27 @@
-import json
 import boto3
+import json
 
-#The code Lambda runs in AWS
+sns = boto3.client('sns')
+
 def lambda_handler(event, context):
-    s3 = boto3.client('s3')
-    sns = boto3.client('sns')
-    
-    bucket_name = event['Records'][0]['s3']['bucket']['name']
-    object_key = event['Records'][0]['s3']['object']['key']
+    print("Received event:", json.dumps(event, indent=2))
 
-    obj_metadata = s3.head_object(Bucket=bucket_name, Key=object_key)
-    size = obj_metadata['ContentLength']
-    created_time = obj_metadata['LastModified']
+    topic_arn = "arn:aws:sns:ap-south-1:010928211412:s3-upload-alerts"
 
-    message = f"📦 New object uploaded:\n\nBucket: {bucket_name}\nKey: {object_key}\nSize: {size} bytes\nUploaded at: {created_time}"
+    for record in event['Records']:
+        s3_info = record['s3']
+        bucket = s3_info['bucket']['name']
+        key = s3_info['object']['key']
 
-    sns.publish(
-        TopicArn='arn:aws:sns:ap-south-1:010928211412:s3-upload-alerts',  # replace later
-        Message=message,
-        Subject="🆕 New S3 Upload Notification"
-    )
+        message = f" New file uploaded: s3://{bucket}/{key}"
+        subject = " S3 Upload Alert"
 
+        sns.publish(
+            TopicArn=topic_arn,
+            Subject=subject,
+            Message=message
+        )
     return {
         'statusCode': 200,
-        'body': json.dumps('Notification sent!')
+        'body': json.dumps('Notification Sent!')
     }
