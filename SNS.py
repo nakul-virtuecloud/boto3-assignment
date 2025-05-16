@@ -69,6 +69,7 @@ def create_lambda_iam_role(role_name):
     time.sleep(10)
     return role['Role']['Arn']
 
+#The script you run locally to create/upload that Lambda
 def create_lambda_function(function_name, role_arn):
     lambda_client = boto3.client('lambda')
     with open("function.zip", 'rb') as f:
