@@ -1,0 +1,22 @@
+[
+  {
+    "FunctionName": "list2-lambda",
+    "Runtime": "nodejs22.x",
+    "Handler": "index.handler",
+    "LastModified": "2025-05-19T15:28:39.267+0000",
+    "MemorySize": 128,
+    "Timeout": 3,
+    "Role": "arn:aws:iam::010928211412:role/service-role/list2-lambda-role-ylzibp0l",
+    "Description": ""
+  },
+  {
+    "FunctionName": "list-lambda",
+    "Runtime": "python3.13",
+    "Handler": "lambda_function.lambda_handler",
+    "LastModified": "2025-05-19T14:42:51.722+0000",
+    "MemorySize": 128,
+    "Timeout": 3,
+    "Role": "arn:aws:iam::010928211412:role/service-role/list-lambda-role-urrkgzox",
+    "Description": ""
+  }
+]
